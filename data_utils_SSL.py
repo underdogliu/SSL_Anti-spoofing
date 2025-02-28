@@ -31,8 +31,12 @@ def genSpoof_list( dir_meta,is_train=False,is_eval=False):
     
     elif(is_eval):
         for line in l_meta:
-            key= line.strip()
+            #key= line.strip()
+            #file_list.append(key)
+            _,key,_,_,label = line.strip().split()
+
             file_list.append(key)
+            d_meta[key] = 1 if label == 'bonafide' else 0
         return file_list
     else:
         for line in l_meta:
@@ -83,7 +87,7 @@ class Dataset_ASVspoof2019_train(Dataset):
             
             
 class Dataset_ASVspoof2021_eval(Dataset):
-    def __init__(self, list_IDs, base_dir, wav_format="wav"):
+    def __init__(self, list_IDs, base_dir, wav_format="flac"):
         '''self.list_IDs	: list of strings (each string: utt key),
         '''
             

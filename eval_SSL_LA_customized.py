@@ -7,6 +7,7 @@ import sys
 import os
 import numpy as np
 import torch
+from tqdm import tqdm
 from torch import nn
 from torch import Tensor
 from torch.utils.data import DataLoader
@@ -43,9 +44,9 @@ def evaluate_accuracy(dev_loader, model, device):
    
     return val_loss
 
-
+"""
 def produce_evaluation_file(dataset, model, device, save_path):
-    data_loader = DataLoader(dataset, batch_size=10, shuffle=False, drop_last=False)
+    data_loader = DataLoader(dataset, batch_size=1, shuffle=False, drop_last=False)
     num_correct = 0.0
     num_total = 0.0
     model.eval()
@@ -73,6 +74,35 @@ def produce_evaluation_file(dataset, model, device, save_path):
                 fh.write('{} {}\n'.format(f, cm))
         fh.close()   
     print('Scores saved to {}'.format(save_path))
+"""
+
+
+def produce_evaluation_file(dataset, model, device, save_path):
+    data_loader = DataLoader(dataset, batch_size=1, shuffle=False, drop_last=False)
+    model.eval()
+
+    fname_list = []
+    key_list = []
+    score_list = []
+
+    with open(save_path, 'a+') as fh:
+        for batch_x, utt_id in tqdm(data_loader, desc="Evaluating", unit="batch"):
+            fname_list = []
+            score_list = []
+            batch_x = batch_x.to(device)
+
+            batch_out = model(batch_x)
+            batch_score = batch_out[:, 1].data.cpu().numpy().ravel()
+
+            # add outputs
+            fname_list.extend(utt_id)
+            score_list.extend(batch_score.tolist())
+
+            for f, cm in zip(fname_list, score_list):
+                fh.write('{} {}\n'.format(f, cm))
+
+    print('Scores saved to {}'.format(save_path))
+
 
 def train_epoch(train_loader, model, lr,optim, device):
     running_loss = 0
@@ -190,6 +220,7 @@ if __name__ == '__main__':
                         default="./LA_model.pth", help='Model checkpoint')
     parser.add_argument('--eval_output', type=str, default="./eval_output.txt",
                         help='Path to save the evaluation result')
+    parser.add_argument('--wav_format', type=str, default="flac")
     
     if not os.path.exists('models'):
         os.mkdir('models')
@@ -224,7 +255,8 @@ if __name__ == '__main__':
     print('no. of eval trials', len(file_eval))
     eval_set = Dataset_ASVspoof2021_eval(
         list_IDs = file_eval,
-        base_dir = os.path.join(args.database_path)
+        base_dir = os.path.join(args.database_path),
+        wav_format = args.wav_format
     )
     produce_evaluation_file(eval_set, model, device, args.eval_output)
     sys.exit(0)
