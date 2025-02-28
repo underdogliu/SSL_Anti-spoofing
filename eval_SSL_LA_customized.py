@@ -15,12 +15,30 @@ import yaml
 from data_utils_SSL import genSpoof_list,Dataset_ASVspoof2019_train,Dataset_ASVspoof2021_eval
 from model import Model
 from tensorboardX import SummaryWriter
+import pandas as pd
+
 from core_scripts.startup_config import set_random_seed
 
+from eval_metric_LA import compute_eer
 
 __author__ = "Hemlata Tak"
 __email__ = "tak@eurecom.fr"
 
+
+def return_eer(score_file, trial_file):
+    """Computes the Equal Error Rate (EER) based on given scores and trial labels."""
+    cm_data = pd.read_csv(trial_file, sep=' ', header=None, usecols=[1, 4], names=['utt_id', 'decision'])
+    submission_scores = pd.read_csv(score_file, sep=' ', header=None, names=['utt_id', 'score'], skipinitialspace=True)
+
+    # Merge scores with trials based on utt_id
+    cm_scores = submission_scores.merge(cm_data, on='utt_id', how='inner')
+
+    # Separate bonafide and spoof scores
+    bona_cm = cm_scores[cm_scores['decision'] == 'bonafide']['score'].values
+    spoof_cm = cm_scores[cm_scores['decision'] == 'spoof']['score'].values
+
+    eer_cm = compute_eer(bona_cm, spoof_cm)[0]
+    return eer_cm
 
 
 def evaluate_accuracy(dev_loader, model, device):
@@ -258,7 +276,11 @@ if __name__ == '__main__':
         base_dir = os.path.join(args.database_path),
         wav_format = args.wav_format
     )
+    
     produce_evaluation_file(eval_set, model, device, args.eval_output)
+
+    eer_cm = return_eer(args.eval_output, args.protocols_path + '/asvspoof2019_trials.txt')
+    print("Equal error rate: {}%".format(eer_cm))
     sys.exit(0)
    
     
