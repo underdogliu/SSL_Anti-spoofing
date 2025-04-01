@@ -37,7 +37,7 @@ def return_eer(score_file, trial_file):
     bona_cm = cm_scores[cm_scores['decision'] == 'bonafide']['score'].values
     spoof_cm = cm_scores[cm_scores['decision'] == 'spoof']['score'].values
 
-    eer_cm = compute_eer(bona_cm, spoof_cm)[0]
+    eer_cm = compute_eer(bona_cm, spoof_cm)[0] * 100
     return eer_cm
 
 
@@ -238,7 +238,7 @@ if __name__ == '__main__':
                         default="./LA_model.pth", help='Model checkpoint')
     parser.add_argument('--eval_output', type=str, default="./eval_output.txt",
                         help='Path to save the evaluation result')
-    parser.add_argument('--wav_format', type=str, default="flac")
+    parser.add_argument('--wav_format', type=str, default="wav")
     
     if not os.path.exists('models'):
         os.mkdir('models')
@@ -267,8 +267,10 @@ if __name__ == '__main__':
     # evaluation 
     file_eval = genSpoof_list(
         dir_meta=os.path.join(args.protocols_path + '/asvspoof2019_trials.txt'),
+        wav_dir=args.database_path + "/wavs",
         is_train=False,
-        is_eval=True
+        is_eval=True,
+        wav_format=args.wav_format,
     )
     print('no. of eval trials', len(file_eval))
     eval_set = Dataset_ASVspoof2021_eval(
@@ -277,7 +279,10 @@ if __name__ == '__main__':
         wav_format = args.wav_format
     )
     
-    produce_evaluation_file(eval_set, model, device, args.eval_output)
+    if not os.path.exists(args.eval_output):
+        produce_evaluation_file(eval_set, model, device, args.eval_output)
+    else:
+        print("{} exitst. Use that file to compute EER".format(args.eval_output))
 
     eer_cm = return_eer(args.eval_output, args.protocols_path + '/asvspoof2019_trials.txt')
     print("Equal error rate: {}%".format(eer_cm))

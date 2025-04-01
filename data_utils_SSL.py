@@ -14,7 +14,7 @@ ___author__ = "Hemlata Tak"
 __email__ = "tak@eurecom.fr"
 
 
-def genSpoof_list( dir_meta,is_train=False,is_eval=False):
+def genSpoof_list(dir_meta,wav_dir,is_train=False,is_eval=False,wav_format="wav"):
     
     d_meta = {}
     file_list=[]
@@ -34,9 +34,9 @@ def genSpoof_list( dir_meta,is_train=False,is_eval=False):
             #key= line.strip()
             #file_list.append(key)
             _,key,_,_,label = line.strip().split()
-
-            file_list.append(key)
-            d_meta[key] = 1 if label == 'bonafide' else 0
+            if os.path.exists(wav_dir + "/{}.{}".format(key, wav_format)):
+                file_list.append(key)
+                d_meta[key] = 1 if label == 'bonafide' else 0
         return file_list
     else:
         for line in l_meta:
@@ -102,9 +102,11 @@ class Dataset_ASVspoof2021_eval(Dataset):
     def __getitem__(self, index):
         utt_id = self.list_IDs[index]
         X, fs = librosa.load(self.base_dir + '/wavs/{}.{}'.format(utt_id, self.wav_format), sr=16000)
-        # X_pad = pad(X,self.cut)
-        # x_inp = Tensor(X_pad)
-        x_inp = Tensor(X)
+        if X.shape[0] <= self.cut:
+            X_pad = pad(X,self.cut)
+        else:
+            X_pad = X
+        x_inp = Tensor(X_pad)
         return x_inp, utt_id  
 
 
