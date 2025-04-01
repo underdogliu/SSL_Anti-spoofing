@@ -18,7 +18,6 @@ scoredir=ultra_deepfake_scores
 
 mkdir -p $scoredir
 
-if false; then
 # WO short
 python3 eval_SSL_LA_customized.py --wav_format flac \
     --database_path $datadir/eval \
@@ -42,7 +41,6 @@ python3 eval_SSL_LA_customized.py \
     --database_path ultra_deepfake_data/partialspoof \
     --protocols_path ultra_deepfake_data/partialspoof \
     --eval_output $scoredir/partialspoof.txt
-fi
 
 # partialspoof
 python3 eval_SSL_LA_customized.py \
